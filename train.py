@@ -338,9 +338,9 @@ def run():
                 except AttributeError:
                     state_dict = crnn.state_dict()
 
-                torch.save(state_dict,
-                           os.path.join(opt.savePath,
-                                        'netCRNN_{}_{}.pth'.format(epoch + 1, i + 1)))
+                    torch.save(state_dict,
+                            os.path.join(opt.savePath,
+                                            'netCRNN.pth'))
                 
 if __name__=='__main__':
     run()
