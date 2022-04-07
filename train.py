@@ -205,6 +205,8 @@ def run():
     opt = parser.parse_args()
     print(opt)
 
+    torch.autograd.set_detect_anomaly(True)
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     #### set up constants and experiment settings ####
