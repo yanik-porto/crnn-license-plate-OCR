@@ -19,7 +19,11 @@ import random
 from torch.autograd import Variable
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+import math
+import sys
+from packaging import version
 
+print(torch.__version__)
 
 from PIL import Image, ImageOps
 # from invert import Invert
@@ -29,7 +33,7 @@ class LPDataset(Dataset):
     A standard PyTorch definition of Dataset which defines the functions 
     __len__ and __getitem__.
     """
-    def __init__(self, path, cv_idx, transform):
+    def __init__(self, path, transform, cv_idx=None):
         """
         Store the filenames of the jpgs to use. 
         Specifies transforms to apply on images.
@@ -41,10 +45,13 @@ class LPDataset(Dataset):
         """
         self.path = path
         temp = os.listdir(path)
-        self.dirs = [temp[i] for i in cv_idx]
+        if cv_idx is not None:
+            self.dirs = [temp[i] for i in cv_idx]
+        else:
+            self.dirs = temp
     
         filenames = [os.path.splitext(directory)[0] for directory in self.dirs]
-        
+
         self.labels = [file_name.split('_')[-1] for file_name in filenames]
         self.transform = transform
 
@@ -187,11 +194,13 @@ def weights_init(m):
 
 
 def run():
+
     #### argument parsing ####
     parser = argparse.ArgumentParser()
     parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
     parser.add_argument('--epoch', type=int, default=30, help='training epochs')
     parser.add_argument('--dataPath', required=True, help='path to training dataset')
+    parser.add_argument('--valPath', required=True, default=None, help='path to training dataset')
     parser.add_argument('--savePath', required=True, help='path to save trained weights')
     parser.add_argument('--preTrainedPath', type=str, default=None,
                         help='path to pre-trained weights (incremental learning)')
@@ -235,16 +244,6 @@ def run():
     sys.stdout = Logger(os.path.join(opt.savePath, "logs.txt"))
 
     #### data preparation & loading ####
-
-    n = range(len(os.listdir(opt.dataPath)))
-    train_idx, val_idx = train_test_split(n, train_size=0.8, test_size=0.2, 
-                                          random_state=opt.seed)
-
-    # train data
-    print("Checkpoint: Loading data")
-    train_loader = DataLoader(LPDataset(opt.dataPath, train_idx, train_transformer), 
-                              batch_size=opt.batchSize, num_workers = opt.worker, 
-                              shuffle=True, pin_memory=True)
     t = []
     t.append(transforms.Grayscale())
     t.append(transforms.Resize((IMGH, IMGW)))
@@ -255,10 +254,27 @@ def run():
     train_transformer = transforms.Compose(t)
 
 
+    train_loader = None
+    val_set = None
+    if opt.valPath is None:
+        n = range(len(os.listdir(opt.dataPath)))
+        train_idx, val_idx = train_test_split(n, train_size=0.8, test_size=0.2, 
+                                            random_state=opt.seed)
+
+        # train data
+        print("Checkpoint: Loading data")
+        train_loader = DataLoader(LPDataset(opt.dataPath, train_idx, train_transformer), 
+                                batch_size=opt.batchSize, num_workers = opt.worker, 
+                                shuffle=True, pin_memory=True)
+        # validation data
+        val_set = LPDataset(opt.dataPath, val_idx, train_transformer)
+    else:
+        train_loader = DataLoader(LPDataset(opt.dataPath, train_transformer),
+                                  batch_size=opt.batchSize, num_workers=opt.worker,
+                                  shuffle=True, pin_memory=True)
+        val_set = LPDataset(opt.valPath, train_transformer)
     print("Checkpoint: Data loaded")
 
-    # validation data
-    val_set = LPDataset(opt.dataPath, val_idx, train_transformer)
 
 
     #### setup crnn model hyperparameters ####
