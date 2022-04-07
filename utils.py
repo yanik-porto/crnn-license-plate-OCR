@@ -1,6 +1,4 @@
 import collections
-import itertools
-import matplotlib.pyplot as plt
 import torch
 from torch.autograd import Variable
 import numpy as np
@@ -130,7 +128,7 @@ def assureRatio(img):
     """Ensure imgH <= imgW."""
     b, c, h, w = img.size()
     if h > w:
-        main = nn.UpsamplingBilinear2d(size=(h, h), scale_factor=None)
+        main = torch.nn.UpsamplingBilinear2d(size=(h, h), scale_factor=None)
         img = main(img)
     return img
 
