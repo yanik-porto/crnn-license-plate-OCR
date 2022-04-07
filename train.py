@@ -233,11 +233,6 @@ def run():
     sys.stdout = Logger(os.path.join(opt.savePath, "logs.txt"))
 
     #### data preparation & loading ####
-    train_transformer = transforms.Compose([
-        transforms.Grayscale(),  
-    #     transforms.RandomApply([Invert()], p=0.3), # taxi license plate
-        transforms.Resize((IMGH,IMGW)),
-        transforms.ToTensor()])  # transform it into a torch tensor
 
     n = range(len(os.listdir(opt.dataPath)))
     train_idx, val_idx = train_test_split(n, train_size=0.8, test_size=0.2, 
@@ -248,6 +243,16 @@ def run():
     train_loader = DataLoader(LPDataset(opt.dataPath, train_idx, train_transformer), 
                               batch_size=opt.batchSize, num_workers = opt.worker, 
                               shuffle=True, pin_memory=True)
+    t = []
+    t.append(transforms.Grayscale())
+    t.append(transforms.Resize((IMGH, IMGW)))
+    if version.parse(torchvision.__version__) > version.parse("0.7.0"):
+        t.append(transforms.RandomRotation((-5, 5)))
+        t.append(transforms.GaussianBlur(3))
+    t.append(transforms.ToTensor())
+    train_transformer = transforms.Compose(t)
+
+
     print("Checkpoint: Data loaded")
 
     # validation data
