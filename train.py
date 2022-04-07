@@ -6,6 +6,7 @@ import random
 import os
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
+import torchvision
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch
@@ -14,12 +15,10 @@ import numpy as np
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 import random
-import torchvision.models as models
 from torch.autograd import Variable
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
-from torch_baidu_ctc import CTCLoss
 
 from PIL import Image, ImageOps
 # from invert import Invert
