@@ -292,7 +292,7 @@ def run():
     #### decoder, loss function, batch loss ####
     converter = utils.strLabelConverter(classes)
     loss_avg = utils.averager()
-    criterion = nn.CTCLoss().to(device)
+    criterion = nn.CTCLoss(zero_infinity=False).to(device)
 
     #### learning rate, lr scheduler, lr optimiser ####
     LR = opt.lr
@@ -304,8 +304,8 @@ def run():
 
     # 25000 * 0.8 (# of data) // 64 (bs) ~= 310 (iterations) 
     save_iter = len(os.listdir(opt.dataPath)) * 0.8 // opt.batchSize
-    PRINT_ITER = save_iter
-
+    prevLoss = float('inf') #inf
+    prevIdx = -1
     print("Checkpoint: Start training")
     print("You are training on", device)
     for epoch in range(opt.epoch):
@@ -323,24 +323,31 @@ def run():
             loss_avg.add(cost)
 
             i += 1
-            if i % PRINT_ITER == 0:
+            if i % save_iter == 0 :
+                valLoss = validation(crnn, val_set, opt.batchSize, opt.worker, criterion,
+                           converter, image, text, length)
                 # print training loss and validation loss
                 print('[%d/%d][%d/%d] Train Loss: %f  Validation Loss: %f' %
                         (epoch + 1, opt.epoch, i + 1, len(train_loader), loss_avg.val(), 
-                        validation(crnn, val_set, opt.batchSize, opt.worker, criterion,
-                                   converter, image, text, length)))
+                        valLoss))
                 loss_avg.reset()
 
-            if i % save_iter == 0 :
 
                 try:
                     state_dict = crnn.module.state_dict()
                 except AttributeError:
                     state_dict = crnn.state_dict()
 
+                if not math.isnan(valLoss):
                     torch.save(state_dict,
                             os.path.join(opt.savePath,
                                             'netCRNN.pth'))
+                    prevLoss = valLoss
+                    prevIdx = epoch
+                    print("update model")
+                else:
+                    print("last best was at epoch %d with loss %f" % (prevIdx, prevLoss))
+                    sys.exit()
                 
 if __name__=='__main__':
     run()
