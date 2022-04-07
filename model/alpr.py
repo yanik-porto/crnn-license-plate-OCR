@@ -2,12 +2,16 @@ from __future__ import division
 from __future__ import print_function
 
 # self-defined functions
+
+import sys
+sys.path.append("crnn_lpr_OCR")
 import model.crnn as crnn
-import utils 
+import utils
 
 import torch
 from torch.autograd import Variable
 from PIL import Image
+import cv2
 import string
 import torchvision.transforms as transforms
 import numpy as np
@@ -46,23 +50,23 @@ def crnn_predict(crnn, img, transformer, decoder='bestPath', normalise=False):
     
     # move first column to last (so that we can use CTCDecoder as it is)
     preds_np = np.hstack([preds_np[:, 1:], preds_np[:, [0]]])
-    
+
     preds_sm = softmax(preds_np, axis=1)
 #     preds_sm = np.divide(preds_sm, prior)
-    
+
     # normalise is only suitable for best path
     if normalise == True:
         preds_sm = np.divide(preds_sm, prior)
-            
+
     if decoder == 'bestPath':
         output = utils.ctcBestPath(preds_sm, classes)
-        
+
     elif decoder == 'beamSearch':
         output = utils.ctcBeamSearch(preds_sm, classes, None)
     else:
         raise Exception("Invalid decoder method. \
                         Choose either 'bestPath' or 'beamSearch'")
-        
+
     return output
 
 class AutoLPR:
@@ -95,6 +99,9 @@ class AutoLPR:
         
         # image processing for crnn
         self.image = Image.open(img_path)
-        
         return crnn_predict(self.crnn, self.image, self.transformer, self.decoder, self.normalise)
     
+    def predictImg(self, cvImg):
+        cvImg = cv2.cvtColor(cvImg, cv2.COLOR_BGR2RGB)
+        self.image = Image.fromarray(cvImg)
+        return crnn_predict(self.crnn, self.image, self.transformer, self.decoder, self.normalise)
