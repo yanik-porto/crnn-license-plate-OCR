@@ -1,6 +1,7 @@
 import argparse
 import utils
 import model.crnn as model
+from logger import Logger
 
 import random
 import os
@@ -229,6 +230,7 @@ def run():
 
     if not os.path.exists(opt.savePath):
         os.makedirs(opt.savePath)
+    sys.stdout = Logger(os.path.join(opt.savePath, "logs.txt"))
 
     #### data preparation & loading ####
     train_transformer = transforms.Compose([
