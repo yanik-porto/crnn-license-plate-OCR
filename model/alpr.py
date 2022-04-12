@@ -4,7 +4,7 @@ from __future__ import print_function
 # self-defined functions
 
 import sys
-sys.path.append("crnn_lpr_OCR")
+sys.path.append("crnn-license-plate-OCR")
 import model.crnn as crnn
 import utils
 
