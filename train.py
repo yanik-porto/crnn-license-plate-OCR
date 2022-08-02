@@ -79,10 +79,10 @@ class LPDataset(Dataset):
 #                                   fill='black')
 #         elif image.size[0] > IMGW:
 #             raise Exception("Invalid --maxLength")
-        
+
         image = self.transform(image)
-        return image, self.labels[idx]    
-    
+        return image, self.labels[idx]
+
 def trainBatch(net, criterion, optimizer, converter, data_iter, image, text, length):
     """
     Parameters

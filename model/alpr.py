@@ -16,14 +16,11 @@ import string
 import torchvision.transforms as transforms
 import numpy as np
 from scipy.special import softmax
-
 import pickle
-with open('model/weights/prior.pkl', 'rb') as f:
-    prior = pickle.load(f)
     
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def crnn_predict(crnn, img, transformer, decoder='bestPath', normalise=False):
+def crnn_predict(crnn, img, transformer, decoder='bestPath', normalise=False, prior=None):
     """
     Params
     ------
@@ -55,7 +52,7 @@ def crnn_predict(crnn, img, transformer, decoder='bestPath', normalise=False):
 #     preds_sm = np.divide(preds_sm, prior)
 
     # normalise is only suitable for best path
-    if normalise == True:
+    if normalise == True and prior is not None:
         preds_sm = np.divide(preds_sm, prior)
 
     if decoder == 'bestPath':
@@ -84,7 +81,11 @@ class AutoLPR:
             transforms.ToTensor()])
         self.decoder = decoder
         self.normalise = normalise
-        
+        self.prior = None
+
+        if self.normalise:
+            with open('model/weights/prior.pkl', 'rb') as f:
+                self.prior = pickle.load(f)
                 
     def load(self, crnn_path):
 
@@ -99,9 +100,9 @@ class AutoLPR:
         
         # image processing for crnn
         self.image = Image.open(img_path)
-        return crnn_predict(self.crnn, self.image, self.transformer, self.decoder, self.normalise)
+        return crnn_predict(self.crnn, self.image, self.transformer, self.decoder, self.normalise, self.prior)
     
     def predictImg(self, cvImg):
         cvImg = cv2.cvtColor(cvImg, cv2.COLOR_BGR2RGB)
         self.image = Image.fromarray(cvImg)
-        return crnn_predict(self.crnn, self.image, self.transformer, self.decoder, self.normalise)
+        return crnn_predict(self.crnn, self.image, self.transformer, self.decoder, self.normalise, self.prior)
